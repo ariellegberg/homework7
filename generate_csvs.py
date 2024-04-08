@@ -7,9 +7,6 @@ def prepare_album_csvs(csv):
     # Convert lyrics to lowercase
     df['Lyrics'] = df['Lyrics'].str.lower()
 
-    # Filter albums with 'Taylor’s Version' in their titles
-    df = df[df['Album'].str.contains("Taylor’s Version", case=False)]
-
     # Iterate over each unique album
     for album in df['Album'].unique():
         # Filter the DataFrame for the current album
