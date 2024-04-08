@@ -56,13 +56,32 @@ def calculate_sentiment_percentages(text):
     reflection_percentage = reflection_count / total_count * 100
 
     return love_percentage, heartbreak_percentage, optimism_percentage, anger_percentage, reflection_percentage
+def prepare_df(csv):
+    # Read the original CSV file
+    df = pd.read_csv(csv)
+
+    # Convert lyrics to lowercase
+    df['Lyrics'] = df['Lyrics'].str.lower()
+
+    df = df[df['Album'].str.contains("Taylor’s Version", case=False)]
+
+    # Group the data by 'Album' and concatenate the lyrics for each album
+    grouped_df = df.groupby('Album')['Lyrics'].apply(lambda x: ' '.join(x)).reset_index()
+
+    # Save the prepared DataFrame to a new CSV file
+    grouped_df.to_csv('prepared_data.csv', index=False)
+
+    # Display the first few rows of the prepared DataFrame
+    return grouped_df
+songs_prepared = prepare_df('songs.csv')
+
+
 
 def df():
-    df = pd.read_csv("preprocessed_data.csv")
-
    # Apply sentiment analysis to the prologue text
+    df = songs_prepared
     df['Love'], df['Heartbreak'], df['Optimism'], df['Anger'], df['Reflection'] = zip(
-        *df['Prologue Text'].apply(calculate_sentiment_percentages))
+        *df['Lyrics'].apply(calculate_sentiment_percentages))
 
     # Normalize percentages so each sentiment category's bar extends to the same height (representing 100%)
     df['Total'] = df[['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection']].sum(axis=1)
@@ -74,5 +93,5 @@ def df():
     df['Total'] = 100
     return df
 
-df = df()
-df.head()
+data = df()
+print(data.columns)
