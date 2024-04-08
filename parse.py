@@ -5,9 +5,10 @@ from nltk.corpus import stopwords, words
 from nltk.tokenize import word_tokenize, sent_tokenize
 from string import punctuation
 import re
-import seaborn as sns
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from collections import Counter
+import os
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -75,28 +76,42 @@ def calculate_sentiment_percentages(text):
 class LyricAnalyzer:
     def __init__(self):
         self.df = pd.DataFrame()  # initializes an empty data frame to append data to
-        nltk.download('words')
-        nltk.download('punkt')
-        nltk.download('words')
-        nltk.download('stopwords')
+        #nltk.download('words')
+        #nltk.download('punkt')
+        #nltk.download('words')
+        #nltk.download('stopwords')
 
     def load_and_prepare_text_files(self, file_paths):
-        """ Load in multiple text files representing different albums """
+        """
+        Load text files and compile them into a dataframe.
+        :param file_paths: Path to the folder containing album text files.
+        """
+        # Initialize list to store DataFrames for each album
         dfs = []
+
+        # Iterate over each file path
         for file_path in file_paths:
-            album_name = file_path.split("/")[-1].split(".csv")[0]  # Extract album name from file path
-            df = pd.read_csv(file_path)
-            df['Album'] = album_name  # Add album name as a new column
-            dfs.append(df)
-            print(f"CSV file '{album_name}' loaded successfully.")
-        combined_df = pd.concat(dfs, ignore_index=True)  # Concatenate all DataFrames into one
+            # Read lyrics from the text file
+            with open(file_path, 'r') as file:
+                song_lyrics = file.read()
 
-        # Group the data by 'Album' and concatenate the lyrics for each album
-        self.df = combined_df.groupby('Album')['Lyrics'].apply(lambda x: ' '.join(x)).reset_index()
+            # Extract album name from the file name
+            album_name = os.path.splitext(os.path.basename(file_path))[0]
 
-        self.df['Lyrics'] = self.df['Lyrics'].apply(self.preprocess_text)  # preprocess the lyrics
+            # Create DataFrame for the album but get rid of the word lyrics
+            album_df = pd.DataFrame({'Album': [album_name.replace('_lyrics', '')], 'Lyrics': [song_lyrics]})
 
+            # Append album DataFrame
+            dfs.append(album_df)
 
+        # Concatenate DataFrames for all albums into one DataFrame
+        combined_df = pd.concat(dfs, ignore_index=True)
+
+        # Preprocess the lyrics
+        combined_df['Lyrics'] = combined_df['Lyrics'].apply(self.preprocess_text)
+
+        # Assign the combined DataFrame to self.df
+        self.df = combined_df
 
     def preprocess_text(self, text):
         """ Preprocess the texts """
@@ -107,43 +122,109 @@ class LyricAnalyzer:
         words = [word for word in words if word not in stop_words] # remove stop words
         return ' '.join(words) # join all the words back into a string
 
-    def extract_colors(self, lyrics):
+    def _extract_colors(self, lyrics):
+        """
+        Finds all the colors in a string of lyrics
+        """
         # Define a regular expression pattern to match color names
-        color_pattern = re.compile(r'\b(?:red|blue|green|yellow|purple|pink|orange|black|grey|gold|brown)\b', flags=re.IGNORECASE)
+        color_pattern = re.compile(r'\b(?:red|blue|green|yellow|purple|pink|silver|lavender|orange|black|gray|gold|brown|white|burgundy|maroon|cherry|scarlet|crimson|rubies})\b', flags=re.IGNORECASE)
 
         # Find all color mentions in the lyrics
         colors_mentioned = color_pattern.findall(lyrics)
 
         return colors_mentioned
 
+
     def plot_colors_sentiment(self):
-        # Initialize a DataFrame to store colors mentioned and sentiment for each album
-        album_colors_sentiment = pd.DataFrame(columns=['Album', 'Colors', 'Sentiment'])
+        # First, get a dataframe with 'albums' as one column and 'colors' as another
+        # where 'colors' has a list of all the colors mentioned in that album
+        colors_df = self.df.copy()
+        colors_df['Colors'] = colors_df['Lyrics'].apply(lambda x: self._extract_colors(x))
 
-        # Loop through each album
-        for index, row in self.df.iterrows():
-            # Extract colors mentioned in the lyrics
-            colors_mentioned = self.extract_colors(row['Lyrics'])
+        # get sentiment df
+        sentiment_df = self.analyze_sentiment()
 
-            # Determine the majority sentiment for the album
-            love, heartbreak, optimism, anger, reflection = calculate_sentiment_percentages(row['Lyrics'])
-            majority_sentiment = max(love, heartbreak, optimism, anger, reflection, key=lambda x: x[1])[0]
+        # combine the two dataframes
+        merged_df = pd.merge(colors_df, sentiment_df, on=['Album', 'Lyrics'])
 
-            # Append album, colors, and sentiment to the DataFrame
-            album_colors_sentiment = album_colors_sentiment.append({'Album': row['Album'],
-                                                                    'Colors': colors_mentioned,
-                                                                    'Sentiment': majority_sentiment},
-                                                                   ignore_index=True)
+        # colors associated with 'Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection'
+        sentiment_colors = ['pink', 'black', 'orange', 'red', 'white']
 
-        # Plot the colors mentioned in each album and color them according to their sentiment
-        plt.figure(figsize=(12, 8))
-        sns.scatterplot(data=album_colors_sentiment, x='Album', y='Colors', hue='Sentiment', palette='coolwarm')
-        plt.title('Colors Mentioned in Lyrics by Album with Sentiment')
-        plt.xticks(rotation=45, ha='right')
-        plt.ylabel('Colors Mentioned')
-        plt.xlabel('Album')
-        plt.legend(title='Sentiment')
-        plt.show()
+        # make a color map (must use hex colors since matplotlib doesn't know cherry and such)
+        # Define a list of colors for the pie charts
+        color_hex_map = {
+            'red': '#FF0000',
+            'blue': '#0000FF',
+            'green': '#00FF00',
+            'yellow': '#FFFF00',
+            'purple': '#800080',
+            'pink': '#FFC0CB',
+            'silver': '#C0C0C0',
+            'lavender': '#E6E6FA',
+            'orange': '#FFA500',
+            'black': '#000000',
+            'gray': '#808080',
+            'gold': '#FFD700',
+            'brown': '#A52A2A',
+            'white': '#FFFFFF',
+            'burgundy': '#800020',
+            'maroon': '#800000',
+            'cherry': '#DE3163',
+            'scarlet': '#FF2400',
+            'crimson': '#DC143C',
+            'rubies': '#E0115F'
+        }
+
+        num_albums = len(merged_df)
+        num_cols = 2  # Number of columns in each subplot
+        num_rows = (num_albums + 1) // 2  # Number of rows in the subplot grid
+
+        fig = plt.figure(figsize=(16, 12), facecolor='none')  # Increase figsize
+        outer = gridspec.GridSpec(5, 2, wspace=0.2, hspace=0.5)  # Adjust spacing
+
+        for i, (album, colors, lyrics) in enumerate(zip(merged_df['Album'], merged_df['Colors'], merged_df['Lyrics'])):
+            inner = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer[i], wspace=0.1, hspace=0.1)
+
+            # Create subplot for album name
+            ax_album = plt.Subplot(fig, inner[:, :])
+            ax_album.set_xticks([])
+            ax_album.set_yticks([])
+            ax_album.text(0.5, 0.5, album, ha='center', va='center', fontsize=16,
+                          fontweight='bold')  # Increase fontsize
+            fig.add_subplot(ax_album)
+
+            # Create pie chart for color breakdown
+            ax1 = plt.Subplot(fig, inner[0])
+            color_counts = Counter(colors)
+            ax1.pie(color_counts.values(), labels=None, autopct='%1.1f%%',
+                    colors=[color_hex_map[color] for color in color_counts.keys()])
+            ax1.set_title('Color Breakdown', fontsize=12, pad=5)  # Increase fontsize and adjust title position
+            ax1.set_aspect('equal')
+            fig.add_subplot(ax1)
+
+            # Create pie chart for sentiment breakdown
+            ax2 = plt.Subplot(fig, inner[1])
+            sentiment_row = merged_df[merged_df['Album'] == album].iloc[0]
+            ax2.pie(sentiment_row[['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection']], labels=None,
+                    autopct='%1.1f%%', colors=sentiment_colors)
+            ax2.set_title('Sentiment Breakdown', fontsize=12, pad=5)  # Increase fontsize and adjust title position
+            ax2.set_aspect('equal')
+            fig.add_subplot(ax2)
+
+        plt.subplots_adjust(top=0.85)  # Adjust top spacing for the overall title
+        fig.suptitle('Color and Sentiment Breakdown for Each Album', fontsize=18,
+                     fontweight='bold')  # Increase fontsize for overall title
+        fig.patch.set_alpha(0)  # Set the background of the figure to be transparent
+
+        # Create legend for sentiment breakdown
+        plt.legend(labels=['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection'], loc='lower right',
+                   bbox_to_anchor=(1, 0.5))
+
+        # Create legend for color breakdown
+        plt.legend(labels=color_hex_map.keys(), loc='lower right', bbox_to_anchor=(1, 0.7))
+
+        plt.show(block=True)
+        plt.close()
 
     def analyze_sentiment(self):
         sentiment_df = self.df.copy()  # Create a copy of the prepared DataFrame to store sentiment analysis results
@@ -162,18 +243,17 @@ class LyricAnalyzer:
         sentiment_df['Reflection'] = (sentiment_df['Reflection'] / sentiment_df['Total']) * 100
         sentiment_df['Total'] = 100
         return sentiment_df
-
     def plot_sentiment_distribution(self):
         df = self.analyze_sentiment() # we need the sentiment_df for this method
         barWidth = 0.85
-        plt.figure(figsize=(20, 10)) # TO-DO fix figure size
+        plt.figure(figsize=(16, 10))
         r = range(len(df))
 
         plt.barh(r, df['Love'], color='pink', edgecolor='white', height=barWidth, label='Love')
-        plt.barh(r, df['Heartbreak'], left=df['Love'], color='blue', edgecolor='white', height=barWidth,
+        plt.barh(r, df['Heartbreak'], left=df['Love'], color='black', edgecolor='white', height=barWidth,
                  label='Heartbreak')
         plt.barh(r, df['Optimism'], left=[i + j for i, j in zip(df['Love'], df['Heartbreak'])],
-                 color='lightblue',
+                 color='orange',
                  edgecolor='white', height=barWidth, label='Optimism')
         plt.barh(r, df['Anger'],
                  left=[i + j + k for i, j, k in zip(df['Love'], df['Heartbreak'], df['Optimism'])],
@@ -181,7 +261,7 @@ class LyricAnalyzer:
         plt.barh(r, df['Reflection'],
                  left=[i + j + k + l for i, j, k, l in
                        zip(df['Love'], df['Heartbreak'], df['Optimism'], df['Anger'])],
-                 color='limegreen', edgecolor='white', height=barWidth, label='Reflection')
+                 color='white', edgecolor='white', height=barWidth, label='Reflection')
 
         plt.ylabel('Albums', fontweight='bold')
         plt.xlabel('Sentiment Percentage', fontweight='bold')
@@ -196,16 +276,16 @@ class LyricAnalyzer:
 
 analyzer = LyricAnalyzer()
 file_paths = [
-    "1989 (Taylor’s Version) [Deluxe].csv",
-    "Red (Taylor’s Version).csv",
-    "Midnights (3am Edition).csv",
-    "evermore.csv",
-    "folklore.csv",
-    "Lover.csv",
-    "reputation.csv",
-    "Speak Now (Taylor’s Version).csv",
-    "Fearless (Taylor’s Version).csv"
+    "1989_lyrics.txt",
+    "Evermore_lyrics.txt",
+    "Fearless_lyrics.txt",
+    "Folklore_lyrics.txt",
+    "Lover_lyrics.txt",
+    "Midnights_lyrics.txt",
+    "Red_lyrics.txt",
+    "Reputation_lyrics.txt",
+    "SpeakNow_lyrics.txt"
 ]
 analyzer.load_and_prepare_text_files(file_paths)
+#analyzer.plot_sentiment_distribution()
 analyzer.plot_colors_sentiment()
-

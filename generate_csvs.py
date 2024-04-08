@@ -1,19 +1,37 @@
+import os
 import pandas as pd
 
-def prepare_album_csvs(csv):
-    # Read the original CSV file
-    df = pd.read_csv(csv)
+import os
+import pandas as pd
 
-    # Convert lyrics to lowercase
-    df['Lyrics'] = df['Lyrics'].str.lower()
+def compile_album_lyrics_to_text(albums_path):
+    """
+    Compiles lyrics from individual song .txt files into a single text file per album.
+    :param albums_path: Path to the directory containing album folders.
+    :return: A dictionary where keys are album names and values are the compiled lyrics.
+    """
+    album_lyrics = {}
 
-    # Iterate over each unique album
-    for album in df['Album'].unique():
-        # Filter the DataFrame for the current album
-        album_df = df[df['Album'] == album]
+    for album_folder in os.listdir(albums_path):
+        album_path = os.path.join(albums_path, album_folder)
+        if os.path.isdir(album_path):
+            album_name = album_folder
+            lyrics = []
 
-        # Save the DataFrame to a CSV file named after the album
-        album_csv_filename = f"{album}.csv"
-        album_df.to_csv(album_csv_filename, index=False)
+            # Compile lyrics from individual song .txt files
+            for song_file in os.listdir(album_path):
+                if song_file.endswith('.txt'):
+                    song_path = os.path.join(album_path, song_file)
+                    with open(song_path, 'r') as f:
+                        lyrics.append(f.read())
 
-prepare_album_csvs('songs.csv')
+            # Combine lyrics into a single text
+            album_lyrics[album_name] = '\n'.join(lyrics)
+
+    return album_lyrics
+
+
+
+# Example usage:
+albums_path = 'Albums'
+lyrics_dict = compile_album_lyrics_to_text(albums_path)
