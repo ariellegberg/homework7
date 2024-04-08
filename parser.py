@@ -5,29 +5,36 @@ import pandas as pd
 # Love
 love_words = ["love", "joy", "enchanting", "captivating", "beautiful", "romance", "happiness", "healing", "connection",
               "adventure", "shiny", "sweet", "nice", "light", "blue", "lightblue", "yellow", "pink", "gold", "green",
-              "purple", "courage", "faith", "passion", "amazing", "new", "wonderful"]
+              "purple", "courage", "faith", "passion", "amazing", "new", "wonderful", "adoration", "affection", "devotion", "bliss", "euphoria", "fondness", "infatuation", "passionate",
+              "tenderness", "warmth"]
 
 # Heartbreak
 heartbreak_words = ["upset", "wait", "hate", "dislike", "scared", "angry", "confused", "stupid", "fear", "sadness",
                     "doubts", "doubt", "hurt", "pain", "heartbreak", "dark", "tragic", "lonely", "loneliness",
                     "loathing", "devastating", "devastated", "solitary", "cry", "cold", "tears", "teardrops",
                     "turmoil", "demons", "terror", "terrors", "black", "reputation", "brown", "darkgreen", "grey",
-                    "loss", "bye"]
+                    "loss", "bye", "goodbye",
+                    "agony", "despair", "grief", "melancholy", "sorrow", "misery", "regret", "betrayal", "abandonment",
+                    "desolation"]
 
 # Optimism
 optimism_words = ["finally", "relief", "hope", "dreams", "wonderment", "wonder", "wonderful", "smile", "intrigue",
                   "happy", "sunshine", "bright", "uplifting", "positive", "cheerful", "optimistic", "inspiration",
-                  "excitement", "vibrant"]
+                  "excitement", "vibrant",
+                  "anticipation", "confidence", "faith", "gratitude", "hopeful", "positivity", "rejuvenated",
+                  "resilience", "serenity", "trust"]
 
 # Anger
-anger_words = ["angry", "hate", "mad", "outraged", "resentment", "fury", "dislike", "bad", "unsafe", "gross",
+anger_words = ["angry", "anger", "hate", "hatred", "mad", "outraged", "resentment", "fury", "dislike", "bad", "unsafe", "gross",
                "loathing", "loathe", "goodbye", "liar", "lies", "lie", "rage", "bitter", "hostile", "vindictive",
-               "outrageous", "provoked", "enraged", "irritated", "furious", "infuriated"]
+               "outrageous", "provoked", "enraged", "irritated", "furious", "infuriated", "aggravation", "disgust", "hostility", "irritation", "outrage", "resentment", "wrath", "annoyance",
+               "frustration", ]
 
 # Reflection
 reflection_words = ["loss", "bye", "enchanting", "demons", "terror", "terrors", "black", "reputation", "brown",
                     "darkgreen", "grey", "memories", "nostalgia", "contemplate", "introspection", "ponder",
-                    "reminisce", "meditate", "introspective", "thoughtful", "reflective"]
+                    "reminisce", "meditate", "introspective", "thoughtful", "reflective",   "contemplation", "insight", "meditation", "pensive", "rumination", "self-awareness",
+                    "thought-provoking", "introspective", "philosophical", "soul-searching"]
 
 
 ## Define sentiment analysis function to calculate percentages
