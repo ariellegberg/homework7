@@ -39,6 +39,7 @@ reflection_words = ["loss", "bye", "enchanting", "demons", "terror", "terrors", 
 
 ## Define sentiment analysis function to calculate percentages
 
+
 def calculate_sentiment_percentages(text):
     words = text.lower().split()
     total_count = len(words)
