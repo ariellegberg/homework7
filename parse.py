@@ -14,6 +14,9 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
+from collections import defaultdict
+import sankey as sk
+import argparse
 
 ## Define sentiment words
 love_words = ["love", "joy", "enchanting", "captivating", "beautiful", "romance", "happiness", "healing", "connection",
@@ -296,19 +299,112 @@ class LyricAnalyzer:
 
         plt.show()
 
+    def k_counter(self, text):
+        '''
+        Counts the number of times a word appears in text file
+        :param text:
+        :return: dictionary of words and their counts from most to least common
+        '''
+        words = text.lower().split()
+        word_count = defaultdict(int)
+        for word in words:
+            word_count[word] += 1
+        sorted_word_count = sorted(word_count.items(), key=lambda x: x[1], reverse=True)
+        return sorted_word_count
 
-analyzer = LyricAnalyzer()
-file_paths = [
-    "1989_lyrics.txt",
-    "Evermore_lyrics.txt",
-    "Fearless_lyrics.txt",
-    "Folklore_lyrics.txt",
-    "Lover_lyrics.txt",
-    "Midnights_lyrics.txt",
-    "Red_lyrics.txt",
-    "Reputation_lyrics.txt",
-    "SpeakNow_lyrics.txt"
-]
-analyzer.load_and_prepare_text_files(file_paths)
-#analyzer.plot_sentiment_distribution()
-analyzer.plot_colors_sentiment()
+    # Function to count words in text
+    def count_words(self, text, word_lst):
+        '''
+        Counts words in text file that appear in given word list
+        :param text:
+        :param word_lst:
+        :return:
+        '''
+        words = text.lower().split()
+        word_count = defaultdict(int)
+        [word_count.__setitem__(word, 0) for word in word_lst]
+        [word_count.__setitem__(word, word_count[word] + 1) for word in words if word in word_lst]
+        sorted_word_count = sorted(word_count.items(), key=lambda x: x[1], reverse=True)
+        return sorted_word_count
+
+    def wordcount_sankey(self, word_list=None, k=5):
+
+        print(self.df)
+
+        if word_list == []:
+            for index, row in self.df.iterrows():
+                album = row["Album"]
+                text = row["Lyrics"]
+                word_count = self.k_counter(text)
+                first_k_words = [word for word, _ in word_count[:k]]
+                word_list.extend(first_k_words)
+
+
+        global word_dict
+        sankey_data = defaultdict(dict)
+        for index, row in self.df.iterrows():
+            album = row["Album"]
+            text = row["Lyrics"]
+            word_count = self.count_words(text, word_list)
+            for word, count in word_count:
+                sankey_data[album][word] = count
+
+        labels = []
+        source = []
+        target = []
+        value = []
+
+        for album, word_count in sankey_data.items():
+            labels.append(album)
+            for word, count in word_count.items():
+                labels.append(word)
+                source.append(labels.index(album))
+                target.append(labels.index(word))
+                value.append(count)
+
+        sankey_df = pd.DataFrame({
+            'Source': source,
+            'Target': target,
+            'Value': value
+        })
+
+        # Add labels to the DataFrame
+        sankey_df['Source_Label'] = [labels[i] for i in sankey_df['Source']]
+        sankey_df['Target_Label'] = [labels[i] for i in sankey_df['Target']]
+
+        sk.make_sankey(sankey_df, 'Source_Label', 'Target_Label', 'Value')
+
+def main():
+
+    analyzer = LyricAnalyzer()
+    file_paths = [
+        "1989_lyrics.txt",
+        "Evermore_lyrics.txt",
+        "Fearless_lyrics.txt",
+        "Folklore_lyrics.txt",
+        "Lover_lyrics.txt",
+        "Midnights_lyrics.txt",
+        "Red_lyrics.txt",
+        "Reputation_lyrics.txt",
+        "SpeakNow_lyrics.txt"
+    ]
+    analyzer.load_and_prepare_text_files(file_paths)
+    #analyzer.plot_sentiment_distribution()
+    #analyzer.plot_colors_sentiment()
+
+    def list_of_strings(arg):
+        return arg.split(',')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--list", help="List of Words to track in lyrics through Sankey Diagram",
+                        type=list_of_strings)
+    args = parser.parse_args()
+    # python parse.py -l fearless,love,speak,heartbreak,lover,myself,red
+    word_list = []
+    if args.list:
+        word_list = args.list
+    analyzer.wordcount_sankey(word_list, k=2)
+
+
+if __name__ == "__main__":
+    main()
