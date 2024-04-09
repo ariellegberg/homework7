@@ -35,3 +35,4 @@ def compile_album_lyrics_to_text(albums_path):
 # Example usage:
 albums_path = 'Albums'
 lyrics_dict = compile_album_lyrics_to_text(albums_path)
+print(lyrics_dict)

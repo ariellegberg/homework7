@@ -120,6 +120,20 @@ class LyricAnalyzer:
 
     def preprocess_text(self, text):
         """ Preprocess the texts """
+
+        #remove line at beginning of every song
+        text = re.sub(r'^ContributorsTranslations.*?\n', '', text, flags=re.MULTILINE)
+        # Remove text between square brackets
+        text = re.sub(r'\[.*?\]', '', text)
+        # Remove square brackets
+        text = re.sub(r'\[.*?\]', '', text)
+        # Remove the word 'embed'
+        text = text.replace('Embed', '')
+        text = text.replace('Lyrics', '')
+
+        # Remove numbers
+        text = re.sub(r'\d+', '', text)
+
         text = text.lower() # make all the text lowercase
         text = ''.join(c for c in text if c not in punctuation) # takes out punctuation
         words = word_tokenize(text) # Tokenize the text into words
@@ -389,8 +403,8 @@ def main():
         "SpeakNow_lyrics.txt"
     ]
     analyzer.load_and_prepare_text_files(file_paths)
-    #analyzer.plot_sentiment_distribution()
-    #analyzer.plot_colors_sentiment()
+   #analyzer.plot_sentiment_distribution()
+    analyzer.plot_colors_sentiment()
 
     def list_of_strings(arg):
         return arg.split(',')
