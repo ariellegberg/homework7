@@ -79,18 +79,13 @@ def calculate_sentiment_percentages(text):
 
 
 class LyricAnalyzer:
-    def __init__(self):
+    def __init__(self, file_paths):
         self.df = pd.DataFrame()  # initializes an empty data frame to append data to
         #nltk.download('words')
         #nltk.download('punkt')
         #nltk.download('words')
         #nltk.download('stopwords')
 
-    def load_and_prepare_text_files(self, file_paths):
-        """
-        Load text files and compile them into a dataframe.
-        :param file_paths: Path to the folder containing album text files.
-        """
         # Initialize list to store DataFrames for each album
         dfs = []
 
@@ -118,8 +113,14 @@ class LyricAnalyzer:
         # Assign the combined DataFrame to self.df
         self.df = combined_df
 
+
+
     def preprocess_text(self, text):
-        """ Preprocess the texts """
+        """
+         Preprocess the texts, removing stopwords, punctuation and formatiing the words
+         :param text: Text to be preprocessed (txt)
+         :return: processed text (str)
+        """
 
         #remove line at beginning of every song
         text = re.sub(r'^ContributorsTranslations.*?\n', '', text, flags=re.MULTILINE)
@@ -135,7 +136,7 @@ class LyricAnalyzer:
         text = re.sub(r'\d+', '', text)
 
         text = text.lower() # make all the text lowercase
-        text = ''.join(c for c in text if c not in punctuation) # takes out punctuation
+        text = ''.join(c for c in text if c not in punctuation + "’") # takes out punctuation
         words = word_tokenize(text) # Tokenize the text into words
         stop_words = set(stopwords.words('english')) # make sure all words are english
         words = [word for word in words if word not in stop_words] # remove stop words
@@ -144,6 +145,8 @@ class LyricAnalyzer:
     def _extract_colors(self, lyrics):
         """
         Finds all the colors in a string of lyrics
+        :param lyrics: string of lyrics
+        :return: string of colors mentioned
         """
         # Define a regular expression pattern to match color names
         color_pattern = re.compile(r'\b(?:red|blue|green|yellow|purple|pink|silver|lavender|orange|black|gray|gold|brown|white|burgundy|maroon|cherry|scarlet|crimson|rubies})\b', flags=re.IGNORECASE)
@@ -155,6 +158,9 @@ class LyricAnalyzer:
 
 
     def plot_colors_sentiment(self):
+        """
+        Plots the sentiment and color breakdown of albums into subplots
+        """
         # code help from: https://stackoverflow.com/questions/58887571/plotting-2-pie-charts-side-by-side-in-matplotlib
 
         # First, get a dataframe with 'albums' as one column and 'colors' as another
@@ -267,6 +273,10 @@ class LyricAnalyzer:
 
 
     def analyze_sentiment(self):
+        """
+        Create sentiment_df to record frequency of a sentiment category in text
+        :return: sentiment_df (pandas dataframe)
+        """
         sentiment_df = self.df.copy()  # Create a copy of the prepared DataFrame to store sentiment analysis results
 
         # Apply sentiment analysis to the lyrics text
@@ -284,6 +294,10 @@ class LyricAnalyzer:
         sentiment_df['Total'] = 100
         return sentiment_df
     def plot_sentiment_distribution(self):
+        """
+        Plots the sentiment distribution by different sentiment categories
+        :return: plots a bar chart of sentiment distribution
+        """
         df = self.analyze_sentiment() # we need the sentiment_df for this method
         barWidth = 0.85
         plt.figure(figsize=(16, 10))
@@ -332,7 +346,7 @@ class LyricAnalyzer:
         Counts words in text file that appear in given word list
         :param text:
         :param word_lst:
-        :return:
+        :return: develops a sankey diagram
         '''
         words = text.lower().split()
         word_count = defaultdict(int)
@@ -342,6 +356,7 @@ class LyricAnalyzer:
         return sorted_word_count
 
     def wordcount_sankey(self, word_list=None, k=5):
+
 
         if word_list == []:
             for index, row in self.df.iterrows():
@@ -388,7 +403,7 @@ class LyricAnalyzer:
 
 def main():
 
-    analyzer = LyricAnalyzer()
+
     file_paths = [
         "1989_lyrics.txt",
         "Evermore_lyrics.txt",
@@ -400,8 +415,9 @@ def main():
         "Reputation_lyrics.txt",
         "SpeakNow_lyrics.txt"
     ]
-    analyzer.load_and_prepare_text_files(file_paths)
-   #analyzer.plot_sentiment_distribution()
+    analyzer = LyricAnalyzer(file_paths)
+    #print(analyzer.df)
+    #analyzer.plot_sentiment_distribution()
     #analyzer.plot_colors_sentiment()
 
     def list_of_strings(arg):
@@ -411,7 +427,7 @@ def main():
     parser.add_argument("-l", "--list", help="List of Words to track in lyrics through Sankey Diagram",
                         type=list_of_strings)
     args = parser.parse_args()
-    # python parse.py -l love,fearless,drink,wine,baby,twenty,red,blue
+    # python parse.py -l love,fearless,wine,baby,red,blue,golden,speak,mine,rain,sun
     word_list = []
     if args.list:
         word_list = args.list
