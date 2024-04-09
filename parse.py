@@ -343,8 +343,6 @@ class LyricAnalyzer:
 
     def wordcount_sankey(self, word_list=None, k=5):
 
-        print(self.df)
-
         if word_list == []:
             for index, row in self.df.iterrows():
                 album = row["Album"]
@@ -404,7 +402,7 @@ def main():
     ]
     analyzer.load_and_prepare_text_files(file_paths)
    #analyzer.plot_sentiment_distribution()
-    analyzer.plot_colors_sentiment()
+    #analyzer.plot_colors_sentiment()
 
     def list_of_strings(arg):
         return arg.split(',')
@@ -413,7 +411,7 @@ def main():
     parser.add_argument("-l", "--list", help="List of Words to track in lyrics through Sankey Diagram",
                         type=list_of_strings)
     args = parser.parse_args()
-    # python parse.py -l fearless,love,speak,heartbreak,lover,myself,red
+    # python parse.py -l love,fearless,drink,wine,baby,twenty,red,blue
     word_list = []
     if args.list:
         word_list = args.list
