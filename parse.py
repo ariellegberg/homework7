@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
+import seaborn as sns
 
 ## Define sentiment words
 love_words = ["love", "joy", "enchanting", "captivating", "beautiful", "romance", "happiness", "healing", "connection",
@@ -172,7 +172,7 @@ class LyricAnalyzer:
             'brown': '#A52A2A',
             'white': '#FFFFFF',
             'burgundy': '#800020',
-            'maroon': '#800000',
+            'maroon': '#B5406C',
             'cherry': '#DE3163',
             'scarlet': '#FF2400',
             'crimson': '#DC143C',
@@ -187,6 +187,11 @@ class LyricAnalyzer:
         fig = plt.figure(figsize=(16, 12), facecolor='none')  # Increase figsize
         outer = gridspec.GridSpec(5, 2, wspace=0.2, hspace=0.5)  # Adjust spacing
 
+        color_legend_handles = {}
+        color_legend_labels = {}
+        sentiment_legend_handles = {}
+        sentiment_legend_labels = {}
+
         for i, (album, colors, lyrics) in enumerate(zip(merged_df['Album'], merged_df['Colors'], merged_df['Lyrics'])):
             inner = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer[i], wspace=0.1, hspace=0.1)
 
@@ -194,36 +199,112 @@ class LyricAnalyzer:
             ax_album = plt.Subplot(fig, inner[:, :])
             ax_album.set_xticks([])
             ax_album.set_yticks([])
-            ax_album.text(0.5, 0.5, album, ha='center', va='center', fontsize=16,
-                          fontweight='bold')  # Increase fontsize
+            ax_album.text(0.5, 0.5, album, ha='center', va='center', fontsize=16, fontweight='bold')
             fig.add_subplot(ax_album)
 
             # Create pie chart for color breakdown
             ax1 = plt.Subplot(fig, inner[0])
             color_counts = Counter(colors)
-            ax1.pie(color_counts.values(), labels=None, autopct='',  # Remove percentages
-                    colors=[color_hex_map[color] for color in color_counts.keys()], wedgeprops={'edgecolor': 'black', 'linewidth': 1})
-            ax1.set_title('Color Breakdown', fontsize=12, pad=5)  # Increase fontsize and adjust title position
+            wedges, texts, autotexts = ax1.pie(color_counts.values(), labels=None, autopct='',
+                                               colors=[color_hex_map[color] for color in color_counts.keys()],
+                                               wedgeprops={'edgecolor': 'black', 'linewidth': .5})
+            ax1.set_title('Color Breakdown', fontsize=12, pad=5)
             ax1.set_aspect('equal')
             fig.add_subplot(ax1)
 
             # Create pie chart for sentiment breakdown
             ax2 = plt.Subplot(fig, inner[1])
             sentiment_row = merged_df[merged_df['Album'] == album].iloc[0]
-            ax2.pie(sentiment_row[['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection']], labels=None,
-                    autopct='',  # Remove percentages
-                    colors=sentiment_colors, wedgeprops={'edgecolor': 'black', 'linewidth': 1})
-            ax2.set_title('Sentiment Breakdown', fontsize=12, pad=5)  # Increase fontsize and adjust title position
+            wedges2, texts2, autotexts2 = ax2.pie(
+                sentiment_row[['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection']], labels=None, autopct='',
+                colors=sentiment_colors, wedgeprops={'edgecolor': 'black', 'linewidth': .5})
+            ax2.set_title('Sentiment Breakdown', fontsize=12, pad=5)
             ax2.set_aspect('equal')
             fig.add_subplot(ax2)
+
+            # Append handles and labels for color legend
+            for color, wedge in zip(color_counts.keys(), wedges):
+                if color not in color_legend_handles:
+                    color_legend_handles[color] = wedge
+                    color_legend_labels[color] = color
+
+            # Append handles and labels for sentiment legend
+            for sentiment, wedge in zip(['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection'], wedges2):
+                if sentiment not in sentiment_legend_handles:
+                    sentiment_legend_handles[sentiment] = wedge
+                    sentiment_legend_labels[sentiment] = sentiment
+
+        # add a title
         fig.suptitle('Color and Sentiment Breakdown for Each Album', fontsize=18,
                      fontweight='bold')  # Increase fontsize for overall title
+        # Create the legends
+        color_legend = plt.legend(color_legend_handles.values(), color_legend_labels.values(), title='Colors',
+                                  loc='lower right', bbox_to_anchor=(7.25, -.5), ncol=3)
+        sentiment_legend = plt.legend(sentiment_legend_handles.values(), sentiment_legend_labels.values(),
+                                      title='Sentiments', loc='lower right', bbox_to_anchor=(9.5, -.5))
+        fig.add_artist(color_legend)
+        fig.add_artist(sentiment_legend)
 
         plt.show(block=True)
         plt.close()
 
+    import seaborn as sns
 
+    def heatmap(self):
+        # Flatten the 'Colors' column
+        colors_df = self.df.copy()
+        colors_df['Colors'] = colors_df['Lyrics'].apply(lambda x: self._extract_colors(x))
+        colors_df = colors_df.explode('Colors')
 
+        # Get sentiment df
+        sentiment_df = self.analyze_sentiment()
+
+        # Combine the two dataframes
+        merged_df = pd.merge(colors_df, sentiment_df, on=['Album', 'Lyrics'])
+
+        # Prepare data for heatmap
+        heatmap_df = merged_df.pivot_table(index='Colors', columns='Album',
+                                           values=['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection'])
+        heatmap_df = heatmap_df.fillna(0)
+
+        # Normalize the data to get percentages
+        heatmap_df = heatmap_df.div(heatmap_df.sum(axis=1), axis=0) * 100
+
+        # Calculate the number of rows needed
+        num_albums = len(heatmap_df.columns.levels[1])
+        num_rows = (num_albums + 1) // 2  # Add 1 to handle odd numbers and integer division
+
+        # Calculate the figure size based on the number of subplots
+        fig_width = 30  # Base width of the figure
+        fig_height = 5 * num_rows  # Height is 5 units per row, multiplied by the number of rows
+        figsize = (fig_width, fig_height)
+
+        # Create a figure with subplots
+        fig, axes = plt.subplots(num_rows, 2, figsize=figsize)
+
+        # Flatten the axes array for easier iteration
+        axes = axes.flatten() if num_rows > 1 else [axes]
+
+        # Iterate over each album and create a heatmap
+        for i, album in enumerate(heatmap_df.columns.levels[1]):
+            # Select the data for the current album
+            album_data = heatmap_df.xs(album, axis=1, level=1)
+
+            # Create a heatmap for the current album
+            sns.heatmap(album_data, ax=axes[i], cmap='coolwarm', annot=True, fmt='.2f', cbar=False)
+            axes[i].set_title(f'Sentiment Distribution for Album: {album}')
+            axes[i].set_xlabel('Sentiments')
+            axes[i].set_ylabel('Colors')
+
+        # If there's an odd number of albums, hide the last subplot
+        if num_albums % 2 != 0:
+            axes[-1].axis('off')
+
+        # Adjust layout to prevent overlapping
+        plt.tight_layout()
+
+        # Show the plot
+        plt.show()
     def analyze_sentiment(self):
         sentiment_df = self.df.copy()  # Create a copy of the prepared DataFrame to store sentiment analysis results
 
@@ -286,4 +367,4 @@ file_paths = [
 ]
 analyzer.load_and_prepare_text_files(file_paths)
 #analyzer.plot_sentiment_distribution()
-analyzer.plot_colors_sentiment()
+analyzer.heatmap()
