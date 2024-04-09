@@ -12,6 +12,8 @@ import os
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
 
 ## Define sentiment words
 love_words = ["love", "joy", "enchanting", "captivating", "beautiful", "romance", "happiness", "healing", "connection",
@@ -136,6 +138,8 @@ class LyricAnalyzer:
 
 
     def plot_colors_sentiment(self):
+        # code help from: https://stackoverflow.com/questions/58887571/plotting-2-pie-charts-side-by-side-in-matplotlib
+
         # First, get a dataframe with 'albums' as one column and 'colors' as another
         # where 'colors' has a list of all the colors mentioned in that album
         colors_df = self.df.copy()
@@ -148,7 +152,7 @@ class LyricAnalyzer:
         merged_df = pd.merge(colors_df, sentiment_df, on=['Album', 'Lyrics'])
 
         # colors associated with 'Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection'
-        sentiment_colors = ['pink', 'black', 'orange', 'red', 'white']
+        sentiment_colors = ['pink', 'blue', 'lightblue', 'red', 'limegreen']
 
         # make a color map (must use hex colors since matplotlib doesn't know cherry and such)
         # Define a list of colors for the pie charts
@@ -179,6 +183,7 @@ class LyricAnalyzer:
         num_cols = 2  # Number of columns in each subplot
         num_rows = (num_albums + 1) // 2  # Number of rows in the subplot grid
 
+
         fig = plt.figure(figsize=(16, 12), facecolor='none')  # Increase figsize
         outer = gridspec.GridSpec(5, 2, wspace=0.2, hspace=0.5)  # Adjust spacing
 
@@ -196,8 +201,8 @@ class LyricAnalyzer:
             # Create pie chart for color breakdown
             ax1 = plt.Subplot(fig, inner[0])
             color_counts = Counter(colors)
-            ax1.pie(color_counts.values(), labels=None, autopct='%1.1f%%',
-                    colors=[color_hex_map[color] for color in color_counts.keys()])
+            ax1.pie(color_counts.values(), labels=None, autopct='',  # Remove percentages
+                    colors=[color_hex_map[color] for color in color_counts.keys()], wedgeprops={'edgecolor': 'black', 'linewidth': 1})
             ax1.set_title('Color Breakdown', fontsize=12, pad=5)  # Increase fontsize and adjust title position
             ax1.set_aspect('equal')
             fig.add_subplot(ax1)
@@ -206,25 +211,18 @@ class LyricAnalyzer:
             ax2 = plt.Subplot(fig, inner[1])
             sentiment_row = merged_df[merged_df['Album'] == album].iloc[0]
             ax2.pie(sentiment_row[['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection']], labels=None,
-                    autopct='%1.1f%%', colors=sentiment_colors)
+                    autopct='',  # Remove percentages
+                    colors=sentiment_colors, wedgeprops={'edgecolor': 'black', 'linewidth': 1})
             ax2.set_title('Sentiment Breakdown', fontsize=12, pad=5)  # Increase fontsize and adjust title position
             ax2.set_aspect('equal')
             fig.add_subplot(ax2)
-
-        plt.subplots_adjust(top=0.85)  # Adjust top spacing for the overall title
         fig.suptitle('Color and Sentiment Breakdown for Each Album', fontsize=18,
                      fontweight='bold')  # Increase fontsize for overall title
-        fig.patch.set_alpha(0)  # Set the background of the figure to be transparent
-
-        # Create legend for sentiment breakdown
-        plt.legend(labels=['Love', 'Heartbreak', 'Optimism', 'Anger', 'Reflection'], loc='lower right',
-                   bbox_to_anchor=(1, 0.5))
-
-        # Create legend for color breakdown
-        plt.legend(labels=color_hex_map.keys(), loc='lower right', bbox_to_anchor=(1, 0.7))
 
         plt.show(block=True)
         plt.close()
+
+
 
     def analyze_sentiment(self):
         sentiment_df = self.df.copy()  # Create a copy of the prepared DataFrame to store sentiment analysis results
@@ -250,10 +248,10 @@ class LyricAnalyzer:
         r = range(len(df))
 
         plt.barh(r, df['Love'], color='pink', edgecolor='white', height=barWidth, label='Love')
-        plt.barh(r, df['Heartbreak'], left=df['Love'], color='black', edgecolor='white', height=barWidth,
+        plt.barh(r, df['Heartbreak'], left=df['Love'], color='blue', edgecolor='white', height=barWidth,
                  label='Heartbreak')
         plt.barh(r, df['Optimism'], left=[i + j for i, j in zip(df['Love'], df['Heartbreak'])],
-                 color='orange',
+                 color='lightblue',
                  edgecolor='white', height=barWidth, label='Optimism')
         plt.barh(r, df['Anger'],
                  left=[i + j + k for i, j, k in zip(df['Love'], df['Heartbreak'], df['Optimism'])],
@@ -261,7 +259,7 @@ class LyricAnalyzer:
         plt.barh(r, df['Reflection'],
                  left=[i + j + k + l for i, j, k, l in
                        zip(df['Love'], df['Heartbreak'], df['Optimism'], df['Anger'])],
-                 color='white', edgecolor='white', height=barWidth, label='Reflection')
+                 color='limegreen', edgecolor='white', height=barWidth, label='Reflection')
 
         plt.ylabel('Albums', fontweight='bold')
         plt.xlabel('Sentiment Percentage', fontweight='bold')
