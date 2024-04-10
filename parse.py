@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import os
 import matplotlib
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -79,16 +80,16 @@ def calculate_sentiment_percentages(text):
 
 
 class LyricAnalyzer:
-    def __init__(self, file_paths):
+    def __init__(self):
         self.df = pd.DataFrame()  # initializes an empty data frame to append data to
-        #nltk.download('words')
-        #nltk.download('punkt')
-        #nltk.download('words')
-        #nltk.download('stopwords')
+        # nltk.download('words')
+        # nltk.download('punkt')
+        # nltk.download('words')
+        # nltk.download('stopwords')
 
+    def load_text(self, file_paths):
         # Initialize list to store DataFrames for each album
         dfs = []
-
         # Iterate over each file path
         for file_path in file_paths:
             # Read lyrics from the text file
@@ -113,8 +114,6 @@ class LyricAnalyzer:
         # Assign the combined DataFrame to self.df
         self.df = combined_df
 
-
-
     def preprocess_text(self, text):
         """
          Preprocess the texts, removing stopwords, punctuation and formatiing the words
@@ -122,7 +121,7 @@ class LyricAnalyzer:
          :return: processed text (str)
         """
 
-        #remove line at beginning of every song
+        # remove line at beginning of every song
         text = re.sub(r'^ContributorsTranslations.*?\n', '', text, flags=re.MULTILINE)
         # Remove text between square brackets
         text = re.sub(r'\[.*?\]', '', text)
@@ -135,12 +134,15 @@ class LyricAnalyzer:
         # Remove numbers
         text = re.sub(r'\d+', '', text)
 
-        text = text.lower() # make all the text lowercase
-        text = ''.join(c for c in text if c not in punctuation + "’") # takes out punctuation
-        words = word_tokenize(text) # Tokenize the text into words
-        stop_words = set(stopwords.words('english')) # make sure all words are english
-        words = [word for word in words if word not in stop_words] # remove stop words
-        return ' '.join(words) # join all the words back into a string
+        text = text.lower()  # make all the text lowercase
+        text = ''.join(c for c in text if c not in punctuation + "’")  # takes out punctuation
+        words = word_tokenize(text)  # Tokenize the text into words
+        stop_words = set(stopwords.words('english'))  # make sure all words are english
+        words = [word for word in words if word not in stop_words]  # remove stop words
+        return ' '.join(words)  # join all the words back into a string
+
+    def statistics(self):
+        self.data = self.df.copy()
 
     def _extract_colors(self, lyrics):
         """
@@ -149,13 +151,14 @@ class LyricAnalyzer:
         :return: string of colors mentioned
         """
         # Define a regular expression pattern to match color names
-        color_pattern = re.compile(r'\b(?:red|blue|green|yellow|purple|pink|silver|lavender|orange|black|gray|gold|brown|white|burgundy|maroon|cherry|scarlet|crimson|rubies})\b', flags=re.IGNORECASE)
+        color_pattern = re.compile(
+            r'\b(?:red|blue|green|yellow|purple|pink|silver|lavender|orange|black|gray|gold|brown|white|burgundy|maroon|cherry|scarlet|crimson|rubies})\b',
+            flags=re.IGNORECASE)
 
         # Find all color mentions in the lyrics
         colors_mentioned = color_pattern.findall(lyrics)
 
         return colors_mentioned
-
 
     def plot_colors_sentiment(self):
         """
@@ -205,7 +208,6 @@ class LyricAnalyzer:
         num_albums = len(merged_df)
         num_cols = 2  # Number of columns in each subplot
         num_rows = (num_albums + 1) // 2  # Number of rows in the subplot grid
-
 
         fig = plt.figure(figsize=(16, 12), facecolor='none')  # Increase figsize
         outer = gridspec.GridSpec(5, 2, wspace=0.2, hspace=0.5)  # Adjust spacing
@@ -271,7 +273,6 @@ class LyricAnalyzer:
         plt.show(block=True)
         plt.close()
 
-
     def analyze_sentiment(self):
         """
         Create sentiment_df to record frequency of a sentiment category in text
@@ -293,12 +294,13 @@ class LyricAnalyzer:
         sentiment_df['Reflection'] = (sentiment_df['Reflection'] / sentiment_df['Total']) * 100
         sentiment_df['Total'] = 100
         return sentiment_df
+
     def plot_sentiment_distribution(self):
         """
         Plots the sentiment distribution by different sentiment categories
         :return: plots a bar chart of sentiment distribution
         """
-        df = self.analyze_sentiment() # we need the sentiment_df for this method
+        df = self.analyze_sentiment()  # we need the sentiment_df for this method
         barWidth = 0.85
         plt.figure(figsize=(16, 10))
         r = range(len(df))
@@ -357,7 +359,6 @@ class LyricAnalyzer:
 
     def wordcount_sankey(self, word_list=None, k=5):
 
-
         if word_list == []:
             for index, row in self.df.iterrows():
                 album = row["Album"]
@@ -365,7 +366,6 @@ class LyricAnalyzer:
                 word_count = self.k_counter(text)
                 first_k_words = [word for word, _ in word_count[:k]]
                 word_list.extend(first_k_words)
-
 
         global word_dict
         sankey_data = defaultdict(dict)
@@ -401,9 +401,8 @@ class LyricAnalyzer:
 
         sk.make_sankey(sankey_df, 'Source_Label', 'Target_Label', 'Value')
 
+
 def main():
-
-
     file_paths = [
         "1989_lyrics.txt",
         "Evermore_lyrics.txt",
@@ -415,10 +414,11 @@ def main():
         "Reputation_lyrics.txt",
         "SpeakNow_lyrics.txt"
     ]
-    analyzer = LyricAnalyzer(file_paths)
-    #print(analyzer.df)
-    #analyzer.plot_sentiment_distribution()
-    #analyzer.plot_colors_sentiment()
+
+    analyzer = LyricAnalyzer()
+    analyzer.load_text(file_paths)
+    print(analyzer.df)
+
 
     def list_of_strings(arg):
         return arg.split(',')
@@ -426,12 +426,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--list", help="List of Words to track in lyrics through Sankey Diagram",
                         type=list_of_strings)
+    parser.add_argument("-k", "--k_val", help="Number of most common words to track for each file", type=int)
     args = parser.parse_args()
     # python parse.py -l love,fearless,wine,baby,red,blue,golden,speak,mine,rain,sun
     word_list = []
     if args.list:
         word_list = args.list
-    analyzer.wordcount_sankey(word_list, k=2)
+
+    k = 2
+    if args.k_val:
+        k = args.k_val
+
+    #analyzer.wordcount_sankey(word_list, k=k)
+    #analyzer.plot_sentiment_distribution()
+    # analyzer.plot_colors_sentiment()
 
 
 if __name__ == "__main__":
