@@ -23,7 +23,7 @@ def _code_mapping(df, src, targ):
     return df, labels
 
 
-def make_sankey(df, src, targ, vals=None, **kwargs):
+def make_sankey(df, src, targ, vals=None, title=None, **kwargs):
     """
     :param df: Input dataframe
     :param src: Source column of labels
@@ -49,6 +49,9 @@ def make_sankey(df, src, targ, vals=None, **kwargs):
 
     sk = go.Sankey(link=link, node=node)
     fig = go.Figure(sk)
+    if title:
+        fig.update_layout(title_text=title)
+
     fig.show()
 
 

@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import os
 import matplotlib
-
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -88,6 +87,11 @@ class LyricAnalyzer:
         # nltk.download('stopwords')
 
     def load_text(self, file_paths):
+        """
+        Load in text files, process them, and add to df
+        :param file_paths: list of string file paths
+        :return: None
+        """
         # Initialize list to store DataFrames for each album
         dfs = []
         # Iterate over each file path
@@ -142,7 +146,33 @@ class LyricAnalyzer:
         return ' '.join(words)  # join all the words back into a string
 
     def statistics(self):
+        """
+        Create data frame that tracks word count and average word length of files
+        """
         self.data = self.df.copy()
+
+        def count_words(text):
+            return len(text.split())
+
+        # Apply the function to the 'Lyrics' column
+        self.data['word_count'] = self.data['Lyrics'].apply(count_words)
+
+        # Function to calculate average word length
+        def average_word_length(text):
+            words = text.split()
+            word_lengths = [len(word) for word in words]
+            if len(word_lengths) == 0:
+                return 0
+            else:
+                return sum(word_lengths) / len(word_lengths)
+
+        # Apply the function to the 'Lyrics' column
+        self.data['avg_word_length'] = self.data['Lyrics'].apply(average_word_length)
+
+        return self.data
+
+
+
 
     def _extract_colors(self, lyrics):
         """
@@ -399,7 +429,7 @@ class LyricAnalyzer:
         sankey_df['Source_Label'] = [labels[i] for i in sankey_df['Source']]
         sankey_df['Target_Label'] = [labels[i] for i in sankey_df['Target']]
 
-        sk.make_sankey(sankey_df, 'Source_Label', 'Target_Label', 'Value')
+        sk.make_sankey(sankey_df, 'Source_Label', 'Target_Label', 'Value', title = 'Text-to-Word Sankey')
 
 
 def main():
@@ -415,11 +445,11 @@ def main():
         "SpeakNow_lyrics.txt"
     ]
 
+    # initialize lyric analyzer class and load in files
     analyzer = LyricAnalyzer()
     analyzer.load_text(file_paths)
-    print(analyzer.df)
 
-
+    # define parsers for user engagement
     def list_of_strings(arg):
         return arg.split(',')
 
@@ -428,7 +458,7 @@ def main():
                         type=list_of_strings)
     parser.add_argument("-k", "--k_val", help="Number of most common words to track for each file", type=int)
     args = parser.parse_args()
-    # python parse.py -l love,fearless,wine,baby,red,blue,golden,speak,mine,rain,sun
+    # python parse.py -l love,fearless,wine,baby,red,blue,golden,speak,mine
     word_list = []
     if args.list:
         word_list = args.list
@@ -437,9 +467,10 @@ def main():
     if args.k_val:
         k = args.k_val
 
-    #analyzer.wordcount_sankey(word_list, k=k)
-    #analyzer.plot_sentiment_distribution()
-    # analyzer.plot_colors_sentiment()
+    # visualizations depicting the analysis
+    analyzer.wordcount_sankey(word_list, k=k)
+    analyzer.plot_sentiment_distribution()
+    analyzer.plot_colors_sentiment()
 
 
 if __name__ == "__main__":
